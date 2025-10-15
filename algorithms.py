@@ -30,7 +30,15 @@ def grad_descent(step_fn, env):
     
     """
     # Question ONE
-    pass
+
+    pos = env.current_position()
+    result = [pos]
+    while (env.status() == Environment.ACTIVELY_SEARCHING):
+        pos = pos + step_fn(pos)
+        env.step_to(pos)
+        result.append(pos)
+
+    return result
 
 
 def momentum_grad_descent(rate, env):
@@ -56,11 +64,16 @@ class MomentumStepFunction:
     """    
     def __init__(self, loss_gradient, learning_rate, momentum_rate):
         # Question TWO
-        pass
+        self.loss_gradient = loss_gradient
+        self.learning_rate = learning_rate
+        self.momentum_rate = momentum_rate
+        self.prev_step = 0
         
     def __call__(self, pos):
         # Question TWO
-        pass
+        step = -self.learning_rate * self.loss_gradient(pos) + self.momentum_rate*self.prev_step
+        self.prev_step = step
+        return step
 
 
 def adagrad(rate, env):
@@ -85,12 +98,15 @@ class AdagradStepFunction:
         
     """
     def __init__(self, loss_gradient, learning_rate, delta = 0.0000001):
-        # Question THREE
-        pass
+        self.loss_gradient = loss_gradient
+        self.initial_rate = learning_rate
+        self.delta = delta
+        self.odometer = 0
         
     def __call__(self, pos):
-        # Question THREE
-        pass       
+        self.odometer += self.loss_gradient(pos) ** 2
+        rate = self.initial_rate / (self.delta + (self.odometer) ** 0.5)
+        return -rate * self.loss_gradient(pos)
 
 
 def rmsprop(rate, decay_rate, env):
@@ -115,9 +131,17 @@ class RmsPropStepFunction:
         
     """
     def __init__(self, loss_gradient, learning_rate, decay_rate, delta=0.000001):
-        # Question FOUR
-        pass
+        self.loss_gradient = loss_gradient
+        self.initial_rate = learning_rate
+        self.decay_rate = decay_rate
+        self.delta = delta
+        self.decaying_average = None
         
     def __call__(self, pos):
-        # Question FOUR
-        pass
+        if (self.decaying_average is None):
+            self.decaying_average = self.loss_gradient(pos) ** 2
+        else:
+            self.decaying_average = self.decay_rate * self.decaying_average + \
+                (1 - self.decay_rate) * self.loss_gradient(pos) ** 2
+        rate = self.initial_rate / (self.delta + (self.decaying_average) ** 0.5)
+        return -rate * self.loss_gradient(pos)
